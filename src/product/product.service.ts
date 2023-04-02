@@ -16,23 +16,64 @@ export class ProductService {
     private readonly productModel: Model<ProductDocument>,
   ) {}
 
-  create(createProductDto: CreateProductDto) {
-    return 'This action adds a new product';
+  public async createProduct(
+    createProductDto: CreateProductDto,
+  ): Promise<Product> {
+    const newProduct = await this.productModel.create(createProductDto);
+    return newProduct.save();
   }
 
-  findAll() {
-    return `This action returns all product`;
+  public async findAllProducts(): Promise<Product[]> {
+    // Mongoose async operations return thenables.
+    // when using async/await, the exec() method returns a promise.
+    const foundProducts = await this.productModel.find().exec();
+    return foundProducts;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  public async findProductById(id: string) {
+    const foundProduct = await this.productModel.findById(id).exec();
+    return foundProduct;
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+  // allow filter through search query or product category
+  public async findProductsByFilter(
+    filterProductDto: FilterProductDto,
+  ): Promise<Product[]> {
+    const { category, searchQuery } = filterProductDto;
+    let foundProducts = await this.findAllProducts();
+
+    if (searchQuery) {
+      foundProducts = foundProducts.filter(
+        (product) =>
+          product.name.includes(searchQuery) ||
+          product.description.includes(searchQuery),
+      );
+    }
+
+    if (category) {
+      foundProducts = foundProducts.filter(
+        (product) => product.category === category,
+      );
+    }
+
+    return foundProducts;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  public async updateProduct(
+    id: string,
+    updateProductDto: UpdateProductDto,
+  ): Promise<Product> {
+    const updatedProduct = await this.productModel.findByIdAndUpdate(
+      id,
+      updateProductDto,
+      { new: true },
+    );
+
+    return updatedProduct;
+  }
+
+  public async deleteProductById(id: string) {
+    const deletedProdcut = await this.productModel.findByIdAndDelete(id);
+    return deletedProdcut;
   }
 }
